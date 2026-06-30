@@ -11,52 +11,93 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif}
-
 #app{position:relative;width:100vw;height:100vh}
 
-#video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);opacity:0.7}
+/* VIDEO: mirrored so user sees themselves naturally */
+#video{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;
+  transform:scaleX(-1);
+  opacity:0.65;
+}
 
-#canvas-hand{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)}
+/* HAND CANVAS: NOT CSS-mirrored. We manually flip coords in JS. */
+#canvas-hand{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;
+}
 
-#canvas-3d{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* 3D canvas: no mirroring */
+#canvas-3d{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;
+}
 
-#pointer{position:absolute;width:24px;height:24px;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);transition:transform 0.05s;z-index:100}
-#pointer-core{position:absolute;inset:4px;border-radius:50%;background:rgba(255,255,255,0.95)}
-#pointer-ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,0.6);animation:pointerPulse 2s ease-in-out infinite}
-#pointer-glow{position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,rgba(120,180,255,0.4) 0%,transparent 70%)}
-@keyframes pointerPulse{0%,100%{transform:scale(1);opacity:0.6}50%{transform:scale(1.2);opacity:1}}
+#pointer{
+  position:absolute;width:28px;height:28px;border-radius:50%;
+  pointer-events:none;transform:translate(-50%,-50%);z-index:100;
+  will-change:transform,left,top;
+}
+#pointer-core{
+  position:absolute;inset:5px;border-radius:50%;
+  background:rgba(255,255,255,0.95);
+  transition:transform 0.08s,background 0.08s;
+}
+#pointer-ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.55);
+  animation:pointerPulse 2s ease-in-out infinite;
+}
+#pointer-glow{
+  position:absolute;inset:-10px;border-radius:50%;
+  background:radial-gradient(circle,rgba(120,180,255,0.35) 0%,transparent 70%);
+}
+@keyframes pointerPulse{0%,100%{transform:scale(1);opacity:0.55}50%{transform:scale(1.25);opacity:1}}
 
-#pointer.pinching #pointer-core{background:rgba(100,200,255,1);transform:scale(0.6)}
-#pointer.pinching #pointer-ring{border-color:rgba(100,200,255,0.9);animation:none;transform:scale(0.8)}
-#pointer.pinching #pointer-glow{background:radial-gradient(circle,rgba(100,200,255,0.7) 0%,transparent 70%)}
+#pointer.pinching #pointer-core{background:rgba(80,200,255,1);transform:scale(0.55)}
+#pointer.pinching #pointer-ring{border-color:rgba(80,200,255,0.85);animation:none;transform:scale(0.75)}
+#pointer.pinching #pointer-glow{background:radial-gradient(circle,rgba(80,200,255,0.65) 0%,transparent 70%)}
 
-#hud{position:absolute;top:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:200;pointer-events:none}
-.hud-pill{background:rgba(255,255,255,0.08);backdrop-filter:blur(20px) saturate(180%);border:0.5px solid rgba(255,255,255,0.15);border-radius:100px;padding:8px 16px;font-size:12px;color:rgba(255,255,255,0.8);white-space:nowrap;display:flex;align-items:center;gap:6px}
-.hud-dot{width:6px;height:6px;border-radius:50%;background:rgba(100,220,100,0.9)}
-.hud-dot.inactive{background:rgba(255,100,100,0.7)}
+#hud{
+  position:absolute;top:20px;left:50%;transform:translateX(-50%);
+  display:flex;gap:12px;z-index:200;pointer-events:none;
+}
+.hud-pill{
+  background:rgba(255,255,255,0.07);backdrop-filter:blur(20px) saturate(180%);
+  border:0.5px solid rgba(255,255,255,0.14);border-radius:100px;
+  padding:8px 16px;font-size:12px;color:rgba(255,255,255,0.78);
+  white-space:nowrap;display:flex;align-items:center;gap:6px;
+}
+.hud-dot{width:6px;height:6px;border-radius:50%;background:rgba(80,220,80,0.9)}
+.hud-dot.inactive{background:rgba(255,80,80,0.7)}
 
-#gesture-indicator{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:0.5px solid rgba(255,255,255,0.15);border-radius:100px;padding:10px 20px;font-size:13px;color:rgba(255,255,255,0.9);z-index:200;pointer-events:none;transition:opacity 0.3s;opacity:0}
+#gesture-indicator{
+  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);
+  border:0.5px solid rgba(255,255,255,0.14);border-radius:100px;
+  padding:10px 20px;font-size:13px;color:rgba(255,255,255,0.9);
+  z-index:200;pointer-events:none;transition:opacity 0.3s;opacity:0;
+}
 #gesture-indicator.visible{opacity:1}
 
-#inspector{position:absolute;top:80px;right:20px;width:220px;background:rgba(12,12,20,0.7);backdrop-filter:blur(30px) saturate(180%);border:0.5px solid rgba(255,255,255,0.12);border-radius:16px;padding:16px;z-index:200;pointer-events:none;opacity:0;transition:opacity 0.3s}
+#inspector{
+  position:absolute;top:80px;right:20px;width:220px;
+  background:rgba(10,10,18,0.72);backdrop-filter:blur(30px) saturate(180%);
+  border:0.5px solid rgba(255,255,255,0.11);border-radius:16px;
+  padding:16px;z-index:200;pointer-events:none;
+  opacity:0;transition:opacity 0.3s;
+}
 #inspector.visible{opacity:1}
-#inspector h3{font-size:11px;font-weight:500;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px}
-.insp-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:0.5px solid rgba(255,255,255,0.06)}
-.insp-label{font-size:11px;color:rgba(255,255,255,0.4)}
-.insp-val{font-size:11px;font-weight:500;color:rgba(120,200,255,0.9);font-variant-numeric:tabular-nums}
+#inspector h3{font-size:11px;font-weight:500;color:rgba(255,255,255,0.38);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px}
+.insp-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:0.5px solid rgba(255,255,255,0.05)}
+.insp-label{font-size:11px;color:rgba(255,255,255,0.38)}
+.insp-val{font-size:11px;font-weight:500;color:rgba(100,200,255,0.9);font-variant-numeric:tabular-nums}
 
 #spawn-progress{position:absolute;display:none;z-index:201;pointer-events:none}
-#spawn-arc{width:60px;height:60px;transform:rotate(-90deg)}
 
 #help{position:absolute;bottom:30px;left:20px;z-index:200;pointer-events:none}
-.help-row{font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:4px;display:flex;gap:6px}
-.help-gesture{color:rgba(255,255,255,0.55)}
-
-.spatial-window{position:absolute;background:rgba(12,12,20,0.65);backdrop-filter:blur(40px) saturate(200%);border:0.5px solid rgba(255,255,255,0.15);border-radius:20px;z-index:150;min-width:200px;min-height:140px;overflow:hidden}
-.sw-titlebar{padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid rgba(255,255,255,0.08);cursor:move}
-.sw-title{font-size:13px;font-weight:500;color:rgba(255,255,255,0.85)}
-.sw-close{width:12px;height:12px;border-radius:50%;background:rgba(255,100,100,0.6)}
-.sw-body{padding:14px 16px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.7}
+.help-row{font-size:11px;color:rgba(255,255,255,0.32);margin-bottom:4px;display:flex;gap:6px}
+.help-gesture{color:rgba(255,255,255,0.52)}
 </style>
 </head>
 <body>
@@ -93,9 +134,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
   </div>
 
   <div id="spawn-progress">
-    <svg id="spawn-arc" viewBox="0 0 60 60">
+    <svg id="spawn-arc" width="60" height="60" viewBox="0 0 60 60" style="transform:rotate(-90deg)">
       <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
-      <circle id="spawn-arc-fill" cx="30" cy="30" r="24" fill="none" stroke="rgba(120,200,255,0.8)" stroke-width="3" stroke-dasharray="0 150.8" stroke-linecap="round"/>
+      <circle id="spawn-arc-fill" cx="30" cy="30" r="24" fill="none"
+        stroke="rgba(120,200,255,0.85)" stroke-width="3"
+        stroke-dasharray="0 150.8" stroke-linecap="round"/>
     </svg>
   </div>
 
@@ -109,128 +152,194 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:-ap
 </div>
 
 <script>
-const video = document.getElementById('video');
-const canvasHand = document.getElementById('canvas-hand');
-const ctxHand = canvasHand.getContext('2d');
-const pointer = document.getElementById('pointer');
-const handDot = document.getElementById('hand-dot');
-const handStatus = document.getElementById('hand-status');
-const gesturePill = document.getElementById('gesture-pill');
+'use strict';
+
+// ─── One Euro Filter ───────────────────────────────────────────────────────────
+// Jansen 2012: removes jitter while preserving fast movement responsiveness.
+class OneEuroFilter {
+  constructor(freq=60, mincutoff=1.0, beta=0.007, dcutoff=1.0){
+    this.freq=freq; this.mincutoff=mincutoff; this.beta=beta; this.dcutoff=dcutoff;
+    this.xfilt=new LowPassFilter(this._alpha(mincutoff));
+    this.dxfilt=new LowPassFilter(this._alpha(dcutoff));
+    this.lasttime=undefined;
+  }
+  _alpha(cutoff){
+    const te=1.0/this.freq;
+    const tau=1.0/(2*Math.PI*cutoff);
+    return 1.0/(1.0+tau/te);
+  }
+  filter(x, timestamp){
+    if(this.lasttime!==undefined){
+      this.freq=1.0/(timestamp-this.lasttime);
+    }
+    this.lasttime=timestamp;
+    const dx=this.xfilt.hatxprev===undefined?0:(x-this.xfilt.hatxprev)*this.freq;
+    const edx=this.dxfilt.filter(dx,this._alpha(this.dcutoff));
+    const cutoff=this.mincutoff+this.beta*Math.abs(edx);
+    return this.xfilt.filter(x, this._alpha(cutoff));
+  }
+}
+
+class LowPassFilter {
+  constructor(alpha){ this.alpha=alpha; this.hatxprev=undefined; }
+  filter(x, alpha){
+    if(alpha!==undefined) this.alpha=alpha;
+    if(this.hatxprev===undefined){ this.hatxprev=x; return x; }
+    const hatx=this.alpha*x+(1-this.alpha)*this.hatxprev;
+    this.hatxprev=hatx;
+    return hatx;
+  }
+}
+
+// Per-landmark 3-axis One Euro Filter
+class LandmarkOEF {
+  constructor(mincutoff=3.5, beta=0.03){
+    // 21 landmarks × 3 axes
+    this.fx=[]; this.fy=[]; this.fz=[];
+    for(let i=0;i<21;i++){
+      this.fx.push(new OneEuroFilter(30, mincutoff, beta));
+      this.fy.push(new OneEuroFilter(30, mincutoff, beta));
+      this.fz.push(new OneEuroFilter(30, mincutoff, beta, 1.0));
+    }
+  }
+  smooth(lms, ts){
+    const out=[];
+    for(let i=0;i<lms.length;i++){
+      out.push({
+        x: this.fx[i].filter(lms[i].x, ts),
+        y: this.fy[i].filter(lms[i].y, ts),
+        z: this.fz[i].filter(lms[i].z, ts),
+      });
+    }
+    return out;
+  }
+}
+
+// ─── Pointer smoothing (separate OEF for pointer) ─────────────────────────────
+const ptrFilterX = new OneEuroFilter(60, 5.0, 0.1);
+const ptrFilterY = new OneEuroFilter(60, 5.0, 0.1);
+
+// ─── DOM Cache ────────────────────────────────────────────────────────────────
+const video        = document.getElementById('video');
+const canvasHand   = document.getElementById('canvas-hand');
+const ctxHand      = canvasHand.getContext('2d', {alpha:true});
+const pointer      = document.getElementById('pointer');
+const handDot      = document.getElementById('hand-dot');
+const handStatus   = document.getElementById('hand-status');
+const gesturePill  = document.getElementById('gesture-pill');
 const objCountPill = document.getElementById('obj-count-pill');
-const gestureIndicator = document.getElementById('gesture-indicator');
-const inspector = document.getElementById('inspector');
-const spawnProgress = document.getElementById('spawn-progress');
+const gestureEl    = document.getElementById('gesture-indicator');
+const inspector    = document.getElementById('inspector');
+const spawnProgress= document.getElementById('spawn-progress');
 const spawnArcFill = document.getElementById('spawn-arc-fill');
+const inspEls = {
+  id:document.getElementById('i-id'),   type:document.getElementById('i-type'),
+  x: document.getElementById('i-x'),    y:   document.getElementById('i-y'),
+  z: document.getElementById('i-z'),    rx:  document.getElementById('i-rx'),
+  ry:document.getElementById('i-ry'),   sc:  document.getElementById('i-sc'),
+  st:document.getElementById('i-st'),
+};
 
-// ─── EMA Smoother ───
-class EMA {
-  constructor(alpha=0.25){this.alpha=alpha;this.val=null}
-  update(v){this.val=this.val===null?v:this.alpha*v+(1-this.alpha)*this.val;return this.val}
-}
-
-// ─── Smoothed landmark tracker ───
-class LandmarkSmoother {
-  constructor(n=21,alpha=0.2){
-    this.smoothers=Array.from({length:n},()=>({x:new EMA(alpha),y:new EMA(alpha),z:new EMA(alpha)}));
-  }
-  smooth(lms){
-    return lms.map((lm,i)=>({
-      x:this.smoothers[i].x.update(lm.x),
-      y:this.smoothers[i].y.update(lm.y),
-      z:this.smoothers[i].z.update(lm.z)
-    }));
-  }
-}
-
-// ─── Three.js Scene ───
+// ─── Three.js Scene ───────────────────────────────────────────────────────────
 const canvas3d = document.getElementById('canvas-3d');
-const renderer = new THREE.WebGLRenderer({canvas:canvas3d,alpha:true,antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
+const renderer = new THREE.WebGLRenderer({
+  canvas:canvas3d, alpha:true, antialias:true, powerPreference:'high-performance'
+});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
 
-const scene = new THREE.Scene();
-const camera3d = new THREE.PerspectiveCamera(60,1,0.01,1000);
-camera3d.position.set(0,0,5);
+const scene   = new THREE.Scene();
+const cam3d   = new THREE.PerspectiveCamera(55, 1, 0.01, 200);
+cam3d.position.set(0, 0, 5);
 
 // Lighting
-const ambient = new THREE.AmbientLight(0x8899ff,0.4);
-scene.add(ambient);
-const dirLight = new THREE.DirectionalLight(0xffffff,1.2);
-dirLight.position.set(5,8,5);
-dirLight.castShadow=true;
+scene.add(new THREE.AmbientLight(0x8899ff, 0.45));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
+dirLight.position.set(5, 8, 5);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(512, 512); // reduced for perf
 scene.add(dirLight);
-const rimLight = new THREE.PointLight(0x4488ff,0.8,20);
-rimLight.position.set(-4,2,2);
+const rimLight  = new THREE.PointLight(0x4488ff, 0.85, 20);
+rimLight.position.set(-4, 2, 2);
 scene.add(rimLight);
-const fillLight = new THREE.PointLight(0xff8844,0.5,15);
-fillLight.position.set(3,-2,1);
+const fillLight = new THREE.PointLight(0xff8844, 0.55, 15);
+fillLight.position.set(3, -2, 1);
 scene.add(fillLight);
 
-// ─── Object System ───
-const MAX_OBJECTS = 20;
-const objects = [];
-let selectedObject = null;
-let nextId = 1;
-const OBJECT_TYPES = ['cube','sphere','panel','torus','octahedron'];
-let typeIndex = 0;
+// ─── Reusable vectors (avoid GC) ─────────────────────────────────────────────
+const _vec2   = new THREE.Vector2();
+const _vec3a  = new THREE.Vector3();
+const _vec3b  = new THREE.Vector3();
+const _raycaster = new THREE.Raycaster();
 
-function createMaterial(color, emissive=0x000000){
-  return new THREE.MeshStandardMaterial({
-    color, emissive, emissiveIntensity:0.1,
-    roughness:0.3, metalness:0.7,
-    envMapIntensity:1
+function resize(){
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  cam3d.aspect = w / h;
+  cam3d.updateProjectionMatrix();
+  canvasHand.width  = w;
+  canvasHand.height = h;
+}
+resize();
+window.addEventListener('resize', resize, {passive:true});
+
+// ─── Object System ────────────────────────────────────────────────────────────
+const MAX_OBJECTS   = 20;
+const objects       = [];
+const OBJECT_TYPES  = ['cube','sphere','panel','torus','octahedron'];
+const OBJ_COLORS    = [0x4488ff,0xff6644,0x44ff88,0xffaa44,0xcc44ff,0x44ccff];
+let   nextId        = 1;
+let   typeIndex     = 0;
+let   selectedObject= null;
+
+function makeMesh(type, color){
+  let geo;
+  if(type==='cube')       geo = new THREE.BoxGeometry(0.5,0.5,0.5);
+  else if(type==='sphere') geo = new THREE.SphereGeometry(0.3,24,24);
+  else if(type==='panel')  geo = new THREE.BoxGeometry(1.2,0.7,0.04);
+  else if(type==='torus')  geo = new THREE.TorusGeometry(0.3,0.1,12,36);
+  else                     geo = new THREE.OctahedronGeometry(0.35);
+
+  const mat = new THREE.MeshStandardMaterial({
+    color, emissive:0x000000, emissiveIntensity:0.08,
+    roughness:0.28, metalness:0.72
   });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+
+  // Outline
+  const outlineMesh = new THREE.Mesh(
+    geo.clone(),
+    new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.BackSide})
+  );
+  outlineMesh.scale.setScalar(1.045);
+  outlineMesh.visible = false;
+  mesh.add(outlineMesh);
+
+  return {mesh, outline:outlineMesh};
 }
 
-function spawnObject(x,y,z){
-  if(objects.length>=MAX_OBJECTS) return;
-  const type = OBJECT_TYPES[typeIndex % OBJECT_TYPES.length];
-  typeIndex++;
+function spawnObject(wx, wy, wz){
+  if(objects.length >= MAX_OBJECTS) return;
+  const type  = OBJECT_TYPES[typeIndex++ % OBJECT_TYPES.length];
+  const color = OBJ_COLORS[Math.floor(Math.random()*OBJ_COLORS.length)];
+  const {mesh, outline} = makeMesh(type, color);
 
-  let geo, mat;
-  const colors=[0x4488ff,0xff6644,0x44ff88,0xffaa44,0xcc44ff,0x44ccff];
-  const color=colors[Math.floor(Math.random()*colors.length)];
-
-  if(type==='cube'){
-    geo=new THREE.BoxGeometry(0.5,0.5,0.5);
-  } else if(type==='sphere'){
-    geo=new THREE.SphereGeometry(0.3,32,32);
-  } else if(type==='panel'){
-    geo=new THREE.BoxGeometry(1.2,0.7,0.04);
-  } else if(type==='torus'){
-    geo=new THREE.TorusGeometry(0.3,0.1,16,48);
-  } else {
-    geo=new THREE.OctahedronGeometry(0.35);
-  }
-
-  mat=createMaterial(color);
-
-  // Outline mesh
-  const outlineGeo=geo.clone();
-  const outlineMat=new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.BackSide});
-  const outline=new THREE.Mesh(outlineGeo,outlineMat);
-  outline.scale.setScalar(1.04);
-  outline.visible=false;
-
-  const mesh=new THREE.Mesh(geo,mat);
-  mesh.castShadow=true;
-  mesh.position.set(x,y,z);
-  mesh.add(outline);
+  mesh.position.set(wx, wy, wz);
   scene.add(mesh);
 
-  const obj={
-    id:nextId++, type, mesh, outline, color,
-    position:new THREE.Vector3(x,y,z),
-    velocity:new THREE.Vector3(0,0,0),
-    rotation:new THREE.Euler(0,0,0),
+  const obj = {
+    id: nextId++, type, mesh, outline, color,
+    posX:wx, posY:wy, posZ:wz,
+    velX:0,  velY:0,  velZ:0,
+    rotX:0,  rotY:0,  rotZ:0,
     scale:1,
-    selected:false,
-    grabbed:false,
-    hovered:false,
-    age:0,
-    birthProgress:0
+    selected:false, grabbed:false, hovered:false,
+    birthProgress:0,
+    dying:false, deathProgress:0,
   };
   objects.push(obj);
   showGesture(`✨ ${type} spawned`);
@@ -239,22 +348,24 @@ function spawnObject(x,y,z){
 }
 
 function deleteObject(obj){
-  obj.dying=true;
-  obj.deathProgress=0;
-  showGesture('💥 Object deleted');
+  if(obj.dying) return;
+  obj.dying = true;
+  obj.deathProgress = 0;
+  obj.mesh.material.transparent = true;
+  showGesture('💥 Deleted');
 }
 
 function selectObject(obj){
-  if(selectedObject && selectedObject!==obj){
-    selectedObject.selected=false;
-    selectedObject.outline.visible=false;
-    selectedObject.mesh.material.emissiveIntensity=0.1;
+  if(selectedObject && selectedObject !== obj){
+    selectedObject.selected = false;
+    selectedObject.outline.visible = false;
+    selectedObject.mesh.material.emissiveIntensity = 0.08;
   }
-  selectedObject=obj;
+  selectedObject = obj;
   if(obj){
-    obj.selected=true;
-    obj.outline.visible=true;
-    obj.mesh.material.emissiveIntensity=0.3;
+    obj.selected = true;
+    obj.outline.visible = true;
+    obj.mesh.material.emissiveIntensity = 0.32;
     inspector.classList.add('visible');
   } else {
     inspector.classList.remove('visible');
@@ -262,513 +373,546 @@ function selectObject(obj){
 }
 
 function updateObjCount(){
-  const alive=objects.filter(o=>!o.dying).length;
-  objCountPill.textContent=`${alive} object${alive!==1?'s':''}`;
+  const alive = objects.filter(o=>!o.dying).length;
+  objCountPill.textContent = `${alive} object${alive!==1?'s':''}`;
 }
 
-// ─── Hand State ───
-const smoothers=[new LandmarkSmoother(21,0.25),new LandmarkSmoother(21,0.25)];
-let rawResults=null;
-let pointerX=0,pointerY=0;
-let smoothPointerX=window.innerWidth/2, smoothPointerY=window.innerHeight/2;
-const pxSmooth=new EMA(0.2), pySmooth=new EMA(0.2);
+// ─── Coordinate Conversion ────────────────────────────────────────────────────
+// MediaPipe normalizes [0,1] x[0,1], origin top-left.
+// Video has CSS scaleX(-1) so it shows mirror image to user.
+// To display landmarks ON TOP of the mirrored video we must ALSO mirror the x:
+//   screen_x = (1 - lm.x) * width      ← mirrors x so it aligns with CSS-mirrored video
+//   screen_y = lm.y * height
+//
+// For Three.js NDC:
+//   ndcX = (screen_x / width)  * 2 - 1   (standard, no extra flip needed)
+//   ndcY = -(screen_y / height) * 2 + 1
 
-const pinchState=[{active:false,startTime:0,holdTime:0},{active:false,startTime:0,holdTime:0}];
-const grabData=[{obj:null,offsetX:0,offsetY:0,offsetZ:0},{obj:null,offsetX:0,offsetY:0,offsetZ:0}];
+function lmToScreen(lm){
+  // Mirror x to match CSS scaleX(-1) on video
+  return {
+    x: (1 - lm.x) * window.innerWidth,
+    y: lm.y * window.innerHeight,
+  };
+}
 
-let spawnGestureTime=0;
-let deleteGestureTime=0;
-let spawnHolding=false;
-let deleteHolding=false;
+function screenToNDC(sx, sy){
+  const w = window.innerWidth, h = window.innerHeight;
+  return {x: (sx/w)*2-1, y: -(sy/h)*2+1};
+}
+
+function screenToWorld(sx, sy, targetZ=0){
+  const ndc = screenToNDC(sx, sy);
+  _vec2.set(ndc.x, ndc.y);
+  _raycaster.setFromCamera(_vec2, cam3d);
+  const dir   = _raycaster.ray.direction;
+  const orig  = _raycaster.ray.origin;
+  const t     = (targetZ - orig.z) / dir.z;
+  return {
+    x: orig.x + dir.x * t,
+    y: orig.y + dir.y * t,
+    z: targetZ,
+  };
+}
+
+function raycastObjects(sx, sy){
+  const ndc = screenToNDC(sx, sy);
+  _vec2.set(ndc.x, ndc.y);
+  _raycaster.setFromCamera(_vec2, cam3d);
+  const meshes = [];
+  for(let i=0; i<objects.length; i++){
+    if(!objects[i].dying) meshes.push(objects[i].mesh);
+  }
+  const hits = _raycaster.intersectObjects(meshes, false);
+  if(!hits.length) return null;
+  return objects.find(o => o.mesh === hits[0].object) || null;
+}
+
+// ─── Hand Tracking State ──────────────────────────────────────────────────────
+const oefHands    = [new LandmarkOEF(3.5, 0.035), new LandmarkOEF(3.5, 0.035)];
+let smoothedHands = [null, null];
+
+let ptrSX = window.innerWidth*0.5, ptrSY = window.innerHeight*0.5;
+let handResultsPending = null; // double-buffer: tracking writes here
+
+// Pinch state
+const pinch = [{active:false, wasActive:false}, {active:false, wasActive:false}];
+const grab  = [{obj:null, offX:0, offY:0, prevLmZ:null}, {obj:null, offX:0, offY:0, prevLmZ:null}];
+
+// Gesture timers
+let spawnTime=0, spawnFired=false;
+let deleteTime=0, deleteFired=false;
 let focusMode=false;
+let peaceWas=false;
+let twoHandScaleBase=null, twoHandScaleObj=null;
+
+// Gesture notification
 let lastGestureText='';
-let gestureTimeout=null;
-let twoHandScaleBase=null;
-let twoHandScaleObj=null;
-let prevHandZ=null;
-let swipeState={startX:null,startTime:0};
-
-const handVelocity=[{x:new EMA(0.3),y:new EMA(0.3)},{x:new EMA(0.3),y:new EMA(0.3)}];
-let prevHandPos=[null,null];
-
-// ─── Gesture Detection ───
-function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z)}
-function dist2d(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
-
-function isPinch(lms){ return dist(lms[4],lms[8])<0.07; }
-function isOpenPalm(lms){
-  const fingers=[8,12,16,20];
-  return fingers.every(i=>lms[i].y<lms[i-2].y) && dist(lms[4],lms[8])>0.1;
-}
-function isFist(lms){
-  const fingers=[8,12,16,20];
-  return fingers.every(i=>lms[i].y>lms[5].y);
-}
-function isPeace(lms){
-  const indexUp=lms[8].y<lms[6].y;
-  const middleUp=lms[12].y<lms[10].y;
-  const ringDown=lms[16].y>lms[14].y;
-  const pinkyDown=lms[20].y>lms[18].y;
-  return indexUp&&middleUp&&ringDown&&pinkyDown;
-}
-
-function screenToWorld(sx,sy,z=0){
-  const w=window.innerWidth, h=window.innerHeight;
-  // Flip x because video is mirrored
-  const nx=1-(sx/w)*2;
-  const ny=-(sy/h)*2+1;
-  const v=new THREE.Vector3(nx,ny,0.5);
-  v.unproject(camera3d);
-  const dir=v.sub(camera3d.position).normalize();
-  const t=(z-camera3d.position.z)/dir.z;
-  return camera3d.position.clone().add(dir.multiplyScalar(t));
-}
-
-function landmarkToScreen(lm){
-  const w=window.innerWidth, h=window.innerHeight;
-  return {x:(1-lm.x)*w, y:lm.y*h};
-}
-
+let gestureTimerID=null;
 function showGesture(text){
   if(text===lastGestureText) return;
   lastGestureText=text;
-  gestureIndicator.textContent=text;
-  gestureIndicator.classList.add('visible');
-  clearTimeout(gestureTimeout);
-  gestureTimeout=setTimeout(()=>{
-    gestureIndicator.classList.remove('visible');
-    setTimeout(()=>{lastGestureText='';},300);
-  },2000);
+  gestureEl.textContent=text;
+  gestureEl.classList.add('visible');
+  clearTimeout(gestureTimerID);
+  gestureTimerID=setTimeout(()=>{
+    gestureEl.classList.remove('visible');
+    setTimeout(()=>{ lastGestureText=''; }, 350);
+  }, 2100);
+}
+function setGesturePill(t){ gesturePill.textContent=t; }
+
+// ─── Gesture Detection ────────────────────────────────────────────────────────
+function dist3(a,b){ return Math.hypot(a.x-b.x, a.y-b.y, a.z-b.z); }
+function dist2(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+// Pinch: thumb tip (4) close to index tip (8)
+function isPinch(lms){
+  return dist3(lms[4], lms[8]) < 0.068;
 }
 
-function updateGesturePill(text){ gesturePill.textContent=text; }
+// Open palm: all 4 fingers extended, thumb away from index
+function isOpenPalm(lms){
+  const extended = [8,12,16,20].every(i => lms[i].y < lms[i-2].y);
+  return extended && dist3(lms[4], lms[8]) > 0.10;
+}
 
-// ─── Raycasting for hover/click ───
-function raycastObjects(sx,sy){
-  const raycaster=new THREE.Raycaster();
-  const w=window.innerWidth, h=window.innerHeight;
-  const ndcX=1-(sx/w)*2;
-  const ndcY=-(sy/h)*2+1;
-  raycaster.setFromCamera(new THREE.Vector2(ndcX,ndcY),camera3d);
-  const meshes=objects.filter(o=>!o.dying).map(o=>o.mesh);
-  const hits=raycaster.intersectObjects(meshes,false);
-  if(hits.length>0){
-    return objects.find(o=>o.mesh===hits[0].object);
+// Fist: all fingertips curl below knuckles
+function isFist(lms){
+  return [8,12,16,20].every(i => lms[i].y > lms[5].y);
+}
+
+// Peace: index+middle up, ring+pinky down
+function isPeace(lms){
+  return lms[8].y < lms[6].y && lms[12].y < lms[10].y
+      && lms[16].y > lms[14].y && lms[20].y > lms[18].y;
+}
+
+// ─── Hand Skeleton Drawing ────────────────────────────────────────────────────
+// Defined once, not every frame
+const HAND_CONNECTIONS_LIST=[
+  [0,1],[1,2],[2,3],[3,4],         // thumb
+  [0,5],[5,6],[6,7],[7,8],         // index
+  [5,9],[9,10],[10,11],[11,12],    // middle
+  [9,13],[13,14],[14,15],[15,16],  // ring
+  [13,17],[17,18],[18,19],[19,20], // pinky
+  [0,17]                           // palm edge
+];
+const FINGER_TIPS = new Set([4,8,12,16,20]);
+
+// Pre-allocated screen point arrays per hand
+const screenPts = [
+  Array.from({length:21}, ()=>({x:0,y:0})),
+  Array.from({length:21}, ()=>({x:0,y:0})),
+];
+
+// Particle system (pooled)
+const PARTICLE_POOL_SIZE = 80;
+const particlePool = Array.from({length:PARTICLE_POOL_SIZE}, ()=>({
+  x:0,y:0,vx:0,vy:0,life:0,active:false,color:''
+}));
+let pHead=0; // pool head
+
+function emitParticle(cx,cy,color){
+  const p = particlePool[pHead % PARTICLE_POOL_SIZE];
+  pHead++;
+  p.x=cx; p.y=cy;
+  p.vx=(Math.random()-0.5)*3.2;
+  p.vy=(Math.random()-0.5)*3.2;
+  p.life=1.0; p.active=true; p.color=color;
+}
+
+function drawHand(lms, hi, ts){
+  const w = canvasHand.width, h = canvasHand.height;
+  const pts = screenPts[hi];
+  const isLeft = hi===0;
+  const baseColor = isLeft ? '100,180,255' : '255,160,80';
+  const glowColor = isLeft ? '60,140,255'  : '255,120,40';
+
+  // Compute screen points (mirrored)
+  for(let i=0;i<lms.length;i++){
+    const sc = lmToScreen(lms[i]);
+    pts[i].x = sc.x;
+    pts[i].y = sc.y;
   }
-  return null;
+
+  // Connections — batch draw for performance
+  ctxHand.save();
+  ctxHand.shadowColor = `rgba(${glowColor},0.75)`;
+  ctxHand.shadowBlur = 14;
+  ctxHand.strokeStyle = `rgba(${baseColor},0.88)`;
+  ctxHand.lineWidth = 2;
+  ctxHand.lineCap = 'round';
+  ctxHand.beginPath();
+  for(const [a,b] of HAND_CONNECTIONS_LIST){
+    ctxHand.moveTo(pts[a].x, pts[a].y);
+    ctxHand.lineTo(pts[b].x, pts[b].y);
+  }
+  ctxHand.stroke();
+  ctxHand.restore();
+
+  // Joints
+  for(let i=0;i<21;i++){
+    const isTip = FINGER_TIPS.has(i);
+    const r = isTip ? 6 : 3.5;
+    ctxHand.save();
+    ctxHand.shadowColor = `rgba(${glowColor},1)`;
+    ctxHand.shadowBlur = isTip ? 18 : 8;
+    ctxHand.beginPath();
+    ctxHand.arc(pts[i].x, pts[i].y, r, 0, 6.2832);
+    ctxHand.fillStyle = isTip ? `rgba(${baseColor},1)` : 'rgba(255,255,255,0.82)';
+    ctxHand.fill();
+    ctxHand.restore();
+    // Inner white dot
+    ctxHand.beginPath();
+    ctxHand.arc(pts[i].x, pts[i].y, r*0.35, 0, 6.2832);
+    ctxHand.fillStyle = 'rgba(255,255,255,0.95)';
+    ctxHand.fill();
+  }
+
+  // Emit particles from index tip (hand 0 only)
+  if(hi===0 && Math.random()<0.25){
+    emitParticle(pts[8].x, pts[8].y, `rgba(${baseColor},`);
+  }
 }
 
-// ─── Main Processing ───
-function processHands(results){
-  rawResults=results;
-  canvasHand.width=window.innerWidth;
-  canvasHand.height=window.innerHeight;
-  ctxHand.clearRect(0,0,canvasHand.width,canvasHand.height);
+function drawParticles(){
+  for(let i=0;i<PARTICLE_POOL_SIZE;i++){
+    const p = particlePool[i];
+    if(!p.active) continue;
+    p.x+=p.vx; p.y+=p.vy;
+    p.life-=0.055;
+    if(p.life<=0){ p.active=false; continue; }
+    ctxHand.beginPath();
+    ctxHand.arc(p.x, p.y, 2*p.life, 0, 6.2832);
+    ctxHand.fillStyle = p.color + p.life.toFixed(2) + ')';
+    ctxHand.fill();
+  }
+}
 
-  const hasHands=results.multiHandLandmarks && results.multiHandLandmarks.length>0;
-  handDot.className='hud-dot'+(hasHands?'':' inactive');
-  handStatus.textContent=hasHands?`${results.multiHandLandmarks.length} hand${results.multiHandLandmarks.length>1?'s':''} detected`:'No hand detected';
+// ─── MediaPipe Callback ───────────────────────────────────────────────────────
+// Runs asynchronously on MediaPipe's cadence; we store results and consume in RAF.
+function onHandsResults(results){
+  handResultsPending = results;
+}
+
+// ─── Process Hand Data (called once per RAF frame) ────────────────────────────
+function processHandData(ts){
+  const results = handResultsPending;
+  if(!results) return;
+
+  const hasHands = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
+
+  // Update HUD (only when changed — avoid layout thrash)
+  const dotClass = hasHands ? 'hud-dot' : 'hud-dot inactive';
+  if(handDot.className !== dotClass) handDot.className = dotClass;
+  const statusText = hasHands
+    ? `${results.multiHandLandmarks.length} hand${results.multiHandLandmarks.length>1?'s':''} detected`
+    : 'No hand detected';
+  if(handStatus.textContent !== statusText) handStatus.textContent = statusText;
+
+  canvasHand.width  = window.innerWidth;
+  canvasHand.height = window.innerHeight;
 
   if(!hasHands){
-    spawnHolding=false;deleteHolding=false;spawnGestureTime=0;deleteGestureTime=0;
+    smoothedHands[0]=null; smoothedHands[1]=null;
+    spawnTime=0; spawnFired=false;
+    deleteTime=0; deleteFired=false;
+    twoHandScaleBase=null; twoHandScaleObj=null;
     spawnProgress.style.display='none';
-    updateGesturePill('✋ Ready');
+    setGesturePill('✋ Ready');
+    // Release grabs
+    for(let i=0;i<2;i++){
+      if(grab[i].obj){ grab[i].obj.grabbed=false; grab[i].obj=null; }
+    }
+    pointer.classList.remove('pinching');
     return;
   }
 
-  const hands=results.multiHandLandmarks.map((lms,i)=>smoothers[i]?smoothers[i].smooth(lms):lms);
-
-  // Draw premium hand skeleton
-  for(let hi=0;hi<hands.length;hi++){
-    drawPremiumHand(hands[hi],hi);
+  // Smooth each hand
+  const numHands = Math.min(results.multiHandLandmarks.length, 2);
+  for(let hi=0; hi<numHands; hi++){
+    smoothedHands[hi] = oefHands[hi].smooth(results.multiHandLandmarks[hi], ts/1000);
   }
+  for(let hi=numHands; hi<2; hi++) smoothedHands[hi]=null;
 
-  const lms0=hands[0];
-  const indexTip=lms0[8];
-  const thumbTip=lms0[4];
+  // Draw skeleton
+  for(let hi=0; hi<numHands; hi++){
+    drawHand(smoothedHands[hi], hi, ts);
+  }
+  drawParticles();
 
-  // Screen position of index tip
-  const sp=landmarkToScreen(indexTip);
-  pointerX=sp.x; pointerY=sp.y;
+  // ── Primary hand (index 0) ────────────────────────────────────────────────
+  const lms0 = smoothedHands[0];
+  const indexTip = lms0[8];
+  const thumbTip = lms0[4];
 
-  smoothPointerX=pxSmooth.update(pointerX);
-  smoothPointerY=pySmooth.update(pointerY);
+  // Pointer position: smoothed screen coord of index tip
+  const rawSX = lmToScreen(indexTip).x;
+  const rawSY = lmToScreen(indexTip).y;
+  ptrSX = ptrFilterX.filter(rawSX, ts/1000);
+  ptrSY = ptrFilterY.filter(rawSY, ts/1000);
 
-  pointer.style.left=smoothPointerX+'px';
-  pointer.style.top=smoothPointerY+'px';
+  pointer.style.left = ptrSX + 'px';
+  pointer.style.top  = ptrSY + 'px';
 
-  // Detect gestures for hand 0
-  const pinching=isPinch(lms0);
-  const openPalm=isOpenPalm(lms0);
-  const fist=isFist(lms0);
-  const peace=isPeace(lms0);
+  const pinching  = isPinch(lms0);
+  const openPalm  = isOpenPalm(lms0);
+  const fist      = isFist(lms0);
+  const peace     = isPeace(lms0);
 
-  // Two-hand scale
-  if(hands.length>=2){
-    const lms1=hands[1];
-    const d=dist2d(lms0[9],lms1[9]);
-    if(twoHandScaleBase===null){
-      twoHandScaleBase=d;
-      twoHandScaleObj=selectedObject;
+  // ── Two-hand scaling ──────────────────────────────────────────────────────
+  if(numHands >= 2){
+    const lms1 = smoothedHands[1];
+    const d = dist2(lms0[9], lms1[9]);
+    if(twoHandScaleBase === null){
+      twoHandScaleBase = d;
+      twoHandScaleObj  = selectedObject;
     } else if(twoHandScaleObj && !twoHandScaleObj.dying){
-      const factor=d/twoHandScaleBase;
-      const target=Math.max(0.2,Math.min(4,factor));
-      twoHandScaleObj.scale+=(target-twoHandScaleObj.scale)*0.15;
-      twoHandScaleBase=d*0.98+twoHandScaleBase*0.02;
+      const factor = d / twoHandScaleBase;
+      const target = Math.max(0.15, Math.min(4.0, factor));
+      twoHandScaleObj.scale += (target - twoHandScaleObj.scale)*0.18;
+      twoHandScaleBase = d*0.97 + twoHandScaleBase*0.03;
     }
-    updateGesturePill('🤲 Scaling');
+    setGesturePill('🤲 Scaling');
   } else {
-    twoHandScaleBase=null;
-    twoHandScaleObj=null;
+    twoHandScaleBase = null;
+    twoHandScaleObj  = null;
   }
 
-  // Peace — focus mode toggle
+  // ── Peace: toggle focus mode ───────────────────────────────────────────────
   if(peace && !pinching){
-    if(!window._peaceWas){
-      focusMode=!focusMode;
-      showGesture(focusMode?'✌️ Focus mode on':'✌️ Focus mode off');
-      window._peaceWas=true;
-    }
+    if(!peaceWas){ focusMode=!focusMode; showGesture(focusMode?'✌️ Focus on':'✌️ Focus off'); }
+    peaceWas = true;
   } else {
-    window._peaceWas=false;
+    peaceWas = false;
   }
 
-  // Swipe detection
-  if(!pinching && !openPalm && !fist){
-    if(swipeState.startX===null){
-      swipeState.startX=indexTip.x;
-      swipeState.startTime=Date.now();
-    } else {
-      const dx=indexTip.x-swipeState.startX;
-      const dt=Date.now()-swipeState.startTime;
-      if(dt>80 && dt<500){
-        if(Math.abs(dx)>0.2){
-          if(dx<0) showGesture('👉 Swipe Right — Next');
-          else showGesture('👈 Swipe Left — Prev');
-          swipeState.startX=null;
-        }
-      } else if(dt>500){
-        swipeState.startX=null;
-      }
-      const dy=indexTip.y-swipeState.startX;
-      // vertical swipe check skipped for brevity
-    }
-  } else {
-    swipeState.startX=null;
-  }
-
-  // Spawn — open palm hold
-  if(openPalm && hands.length===1){
-    if(spawnGestureTime===0) spawnGestureTime=Date.now();
-    const elapsed=Date.now()-spawnGestureTime;
-    const progress=Math.min(elapsed/1000,1);
-    const circumference=150.8;
-    spawnArcFill.setAttribute('stroke-dasharray',`${progress*circumference} ${circumference}`);
-    const palmPos=landmarkToScreen(lms0[9]);
+  // ── Spawn: open palm hold ─────────────────────────────────────────────────
+  if(openPalm && numHands===1){
+    if(spawnTime===0) spawnTime=ts;
+    const elapsed   = ts - spawnTime;
+    const progress  = Math.min(elapsed/1000, 1);
+    const circ      = 150.8;
+    spawnArcFill.setAttribute('stroke-dasharray', `${progress*circ} ${circ}`);
+    const palmPos = lmToScreen(lms0[9]);
     spawnProgress.style.display='block';
-    spawnProgress.style.left=(palmPos.x-30)+'px';
-    spawnProgress.style.top=(palmPos.y-30)+'px';
-    if(elapsed>=1000 && !spawnHolding){
-      spawnHolding=true;
-      const wx=screenToWorld(smoothPointerX,smoothPointerY,0);
-      spawnObject(wx.x,wx.y,wx.z);
-      spawnGestureTime=Date.now(); // reset for next
+    spawnProgress.style.left  = (palmPos.x-30)+'px';
+    spawnProgress.style.top   = (palmPos.y-30)+'px';
+    if(elapsed >= 1000 && !spawnFired){
+      spawnFired = true;
+      const wp = screenToWorld(ptrSX, ptrSY, 0);
+      spawnObject(wp.x, wp.y, wp.z);
+      spawnTime = ts; spawnFired = false; // allow respawn
     }
-    updateGesturePill('✋ Spawn…');
+    setGesturePill('✋ Spawn…');
   } else {
-    spawnGestureTime=0;
-    spawnHolding=false;
+    spawnTime=0; spawnFired=false;
     spawnProgress.style.display='none';
   }
 
-  // Pinch state machine
-  const wasPinching=pinchState[0].active;
-  pinchState[0].active=pinching;
+  // ── Pinch: grab/select ────────────────────────────────────────────────────
+  const wasPinching = pinch[0].active;
+  pinch[0].active   = pinching;
 
   if(pinching){
     pointer.classList.add('pinching');
-    const hovered=raycastObjects(smoothPointerX,smoothPointerY);
+    const hovered = raycastObjects(ptrSX, ptrSY);
 
     if(!wasPinching){
-      // pinchStart
+      // Pinch start
       if(hovered){
         selectObject(hovered);
-        grabData[0].obj=hovered;
-        hovered.grabbed=true;
-        const wp=screenToWorld(smoothPointerX,smoothPointerY,hovered.position.z);
-        grabData[0].offsetX=hovered.position.x-wp.x;
-        grabData[0].offsetY=hovered.position.y-wp.y;
-        prevHandZ=indexTip.z;
+        grab[0].obj = hovered;
+        hovered.grabbed = true;
+        const wp = screenToWorld(ptrSX, ptrSY, hovered.posZ);
+        grab[0].offX   = hovered.posX - wp.x;
+        grab[0].offY   = hovered.posY - wp.y;
+        grab[0].prevLmZ = indexTip.z;
         showGesture('👌 Grabbed');
       } else {
         selectObject(null);
       }
     } else {
-      // pinchHold — move grabbed object
-      if(grabData[0].obj && !grabData[0].obj.dying){
-        const obj=grabData[0].obj;
-        const wp=screenToWorld(smoothPointerX,smoothPointerY,obj.position.z);
-        const targetX=wp.x+grabData[0].offsetX;
-        const targetY=wp.y+grabData[0].offsetY;
-        obj.position.x+=(targetX-obj.position.x)*0.2;
-        obj.position.y+=(targetY-obj.position.y)*0.2;
+      // Pinch hold: move grabbed object
+      const gobj = grab[0].obj;
+      if(gobj && !gobj.dying){
+        const wp = screenToWorld(ptrSX, ptrSY, gobj.posZ);
+        const tx = wp.x + grab[0].offX;
+        const ty = wp.y + grab[0].offY;
+        gobj.posX += (tx - gobj.posX)*0.22;
+        gobj.posY += (ty - gobj.posY)*0.22;
 
-        // Z depth from landmark z
-        if(prevHandZ!==null){
-          const dz=(indexTip.z-prevHandZ)*8;
-          obj.position.z+=((-dz)-obj.position.z*0.01)*0.1;
-          obj.position.z=Math.max(-3,Math.min(3,obj.position.z));
+        // Z from hand depth landmark
+        if(grab[0].prevLmZ !== null){
+          const dz = (indexTip.z - grab[0].prevLmZ)*9;
+          gobj.posZ -= dz*0.12;
+          gobj.posZ  = Math.max(-3, Math.min(3, gobj.posZ));
         }
-        prevHandZ=indexTip.z;
+        grab[0].prevLmZ = indexTip.z;
 
         // Rotation from hand orientation
-        const mcp=lms0[5]; const pinky=lms0[17]; const wrist=lms0[0];
-        const handYaw=Math.atan2(pinky.y-mcp.y, pinky.x-mcp.x);
-        const handPitch=Math.atan2(mcp.z-wrist.z, mcp.y-wrist.y)*0.5;
-        obj.rotation.y+=(handYaw*0.3-obj.rotation.y)*0.05;
-        obj.rotation.x+=(handPitch*0.5-obj.rotation.x)*0.05;
+        const mcp=lms0[5], pinkyMcp=lms0[17], wrist=lms0[0];
+        const handYaw   = Math.atan2(pinkyMcp.y-mcp.y, pinkyMcp.x-mcp.x);
+        const handPitch = Math.atan2(mcp.z-wrist.z, mcp.y-wrist.y)*0.5;
+        gobj.rotY += (handYaw*0.3   - gobj.rotY)*0.06;
+        gobj.rotX += (handPitch*0.5 - gobj.rotX)*0.06;
 
-        obj.mesh.position.set(obj.position.x,obj.position.y,obj.position.z);
-        obj.mesh.rotation.set(obj.rotation.x,obj.rotation.y,obj.rotation.z);
+        gobj.mesh.position.set(gobj.posX, gobj.posY, gobj.posZ);
+        gobj.mesh.rotation.set(gobj.rotX, gobj.rotY, gobj.rotZ);
       }
     }
-
-    // Delete — fist on selected while pinching treated separately
   } else {
     pointer.classList.remove('pinching');
-    if(wasPinching && grabData[0].obj){
-      // pinchRelease — apply velocity
-      const obj=grabData[0].obj;
-      obj.grabbed=false;
-      grabData[0].obj=null;
+    if(wasPinching && grab[0].obj){
+      grab[0].obj.grabbed = false;
+      grab[0].obj = null;
       showGesture('👋 Released');
     }
   }
 
-  // Fist — delete
+  // ── Fist: delete selected ─────────────────────────────────────────────────
   if(fist && selectedObject && !selectedObject.dying){
-    if(deleteGestureTime===0) deleteGestureTime=Date.now();
-    const elapsed=Date.now()-deleteGestureTime;
-    if(elapsed>=1000 && !deleteHolding){
-      deleteHolding=true;
+    if(deleteTime===0) deleteTime=ts;
+    if(ts-deleteTime >= 1000 && !deleteFired){
+      deleteFired=true;
       deleteObject(selectedObject);
       selectObject(null);
     }
-    updateGesturePill('✊ Delete…');
+    setGesturePill('✊ Delete…');
   } else {
-    if(!fist){ deleteGestureTime=0; deleteHolding=false; }
+    if(!fist){ deleteTime=0; deleteFired=false; }
   }
 
-  // Hover detection
+  // ── Hover ─────────────────────────────────────────────────────────────────
   if(!pinching){
-    const hovered=raycastObjects(smoothPointerX,smoothPointerY);
-    objects.forEach(o=>{
-      const isH=o===hovered;
-      if(isH!==o.hovered){
-        o.hovered=isH;
-      }
-    });
-    if(hovered && !hovered.selected){
-      updateGesturePill('👆 Hover — pinch to grab');
-    } else if(!pinching && !openPalm && !fist && !peace){
-      updateGesturePill('✋ Ready');
+    const hov = raycastObjects(ptrSX, ptrSY);
+    for(let i=0;i<objects.length;i++){
+      const o=objects[i];
+      const isH = o===hov;
+      if(isH !== o.hovered) o.hovered=isH;
     }
+    if(hov && !hov.selected) setGesturePill('👆 Hover — pinch to grab');
+    else if(!openPalm && !fist && !peace) setGesturePill('✋ Ready');
   }
 
-  // Inspector update
+  // ── Inspector update ──────────────────────────────────────────────────────
   if(selectedObject && !selectedObject.dying){
-    const o=selectedObject;
-    document.getElementById('i-id').textContent='#'+o.id;
-    document.getElementById('i-type').textContent=o.type;
-    document.getElementById('i-x').textContent=o.position.x.toFixed(2);
-    document.getElementById('i-y').textContent=o.position.y.toFixed(2);
-    document.getElementById('i-z').textContent=o.position.z.toFixed(2);
-    document.getElementById('i-rx').textContent=(o.rotation.x*180/Math.PI).toFixed(1)+'°';
-    document.getElementById('i-ry').textContent=(o.rotation.y*180/Math.PI).toFixed(1)+'°';
-    document.getElementById('i-sc').textContent=o.scale.toFixed(2)+'x';
-    document.getElementById('i-st').textContent=o.grabbed?'Grabbed':o.hovered?'Hovered':'Selected';
+    const o = selectedObject;
+    const R2D = 180/Math.PI;
+    inspEls.id.textContent   = '#'+o.id;
+    inspEls.type.textContent = o.type;
+    inspEls.x.textContent    = o.posX.toFixed(2);
+    inspEls.y.textContent    = o.posY.toFixed(2);
+    inspEls.z.textContent    = o.posZ.toFixed(2);
+    inspEls.rx.textContent   = (o.rotX*R2D).toFixed(1)+'°';
+    inspEls.ry.textContent   = (o.rotY*R2D).toFixed(1)+'°';
+    inspEls.sc.textContent   = o.scale.toFixed(2)+'x';
+    inspEls.st.textContent   = o.grabbed?'Grabbed':o.hovered?'Hovered':'Selected';
   }
 }
 
-// ─── Premium Hand Drawing ───
-function drawPremiumHand(lms, handIndex){
-  const w=canvasHand.width, h=canvasHand.height;
-  const connections=HAND_CONNECTIONS;
-  const color=handIndex===0?'rgba(100,180,255,':'rgba(255,160,80,';
-  const glowColor=handIndex===0?'rgba(60,140,255,':'rgba(255,120,40,';
-
-  // Draw connections with glow
-  for(const [a,b] of connections){
-    const pa=landmarkToScreen(lms[a]);
-    const pb=landmarkToScreen(lms[b]);
-
-    // Glow layer
-    ctxHand.save();
-    ctxHand.shadowColor=glowColor+'0.8)';
-    ctxHand.shadowBlur=12;
-    ctxHand.beginPath();
-    ctxHand.moveTo(pa.x,pa.y);
-    ctxHand.lineTo(pb.x,pb.y);
-    ctxHand.strokeStyle=color+'0.9)';
-    ctxHand.lineWidth=2;
-    ctxHand.lineCap='round';
-    ctxHand.stroke();
-    ctxHand.restore();
-  }
-
-  // Draw joints
-  for(let i=0;i<lms.length;i++){
-    const p=landmarkToScreen(lms[i]);
-    const isFingerTip=[4,8,12,16,20].includes(i);
-    const r=isFingerTip?6:4;
-
-    // Outer glow
-    ctxHand.save();
-    ctxHand.shadowColor=glowColor+'1)';
-    ctxHand.shadowBlur=isFingerTip?20:10;
-    ctxHand.beginPath();
-    ctxHand.arc(p.x,p.y,r,0,Math.PI*2);
-    ctxHand.fillStyle=isFingerTip?color+'1)':'rgba(255,255,255,0.85)';
-    ctxHand.fill();
-    ctxHand.restore();
-
-    // White center
-    ctxHand.beginPath();
-    ctxHand.arc(p.x,p.y,r*0.4,0,Math.PI*2);
-    ctxHand.fillStyle='rgba(255,255,255,0.9)';
-    ctxHand.fill();
-  }
-
-  // Particles on fingertips
-  if(handIndex===0){
-    const tip=landmarkToScreen(lms[8]);
-    drawParticles(tip.x,tip.y,color);
-  }
-}
-
-const particles=[];
-function drawParticles(cx,cy,color){
-  if(Math.random()<0.3){
-    particles.push({x:cx,y:cy,vx:(Math.random()-0.5)*3,vy:(Math.random()-0.5)*3,life:1,color});
-  }
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];
-    p.x+=p.vx; p.y+=p.vy;
-    p.life-=0.05;
-    if(p.life<=0){particles.splice(i,1);continue;}
-    ctxHand.beginPath();
-    ctxHand.arc(p.x,p.y,2*p.life,0,Math.PI*2);
-    ctxHand.fillStyle=p.color+p.life+')';
-    ctxHand.fill();
-  }
-}
-
-// ─── 3D Render Loop ───
-function resizeRenderer(){
-  const w=window.innerWidth, h=window.innerHeight;
-  renderer.setSize(w,h);
-  camera3d.aspect=w/h;
-  camera3d.updateProjectionMatrix();
-}
-resizeRenderer();
-window.addEventListener('resize',resizeRenderer);
-
-let lastTime=0;
-function animate(time){
+// ─── Master Animation Loop ────────────────────────────────────────────────────
+let lastT = 0;
+function animate(ts){
   requestAnimationFrame(animate);
-  const dt=Math.min((time-lastTime)/1000,0.05);
-  lastTime=time;
+  const dt = Math.min((ts-lastT)/1000, 0.05);
+  lastT = ts;
 
-  // Update objects
-  for(let i=objects.length-1;i>=0;i--){
-    const obj=objects[i];
+  // Consume latest hand data
+  processHandData(ts);
+  handResultsPending = null; // mark consumed
+
+  // ── Update 3D objects ──────────────────────────────────────────────────────
+  for(let i=objects.length-1; i>=0; i--){
+    const obj = objects[i];
 
     if(obj.dying){
-      obj.deathProgress=(obj.deathProgress||0)+dt*2;
-      const s=Math.max(0,1-obj.deathProgress);
+      obj.deathProgress += dt*2.2;
+      const s = Math.max(0, 1-obj.deathProgress);
       obj.mesh.scale.setScalar(obj.scale*s);
-      obj.mesh.material.opacity=s;
-      obj.mesh.material.transparent=true;
-      if(obj.deathProgress>=1){
+      obj.mesh.material.opacity = s;
+      if(obj.deathProgress >= 1){
         scene.remove(obj.mesh);
+        // dispose geometry/material
+        obj.mesh.geometry.dispose();
+        obj.mesh.material.dispose();
         objects.splice(i,1);
         updateObjCount();
       }
       continue;
     }
 
-    // Birth animation
-    if(obj.birthProgress<1){
-      obj.birthProgress=Math.min(obj.birthProgress+dt*3,1);
-      const ease=1-Math.pow(1-obj.birthProgress,3);
-      obj.mesh.scale.setScalar(obj.scale*ease);
-    } else {
-      obj.mesh.scale.setScalar(obj.scale);
+    // Birth ease
+    if(obj.birthProgress < 1){
+      obj.birthProgress = Math.min(obj.birthProgress+dt*3, 1);
     }
 
-    // Physics — apply velocity when not grabbed
+    const birthEase = 1 - Math.pow(1-obj.birthProgress, 3);
+    const scaleTarget = obj.scale * birthEase;
+
+    // Physics drift
     if(!obj.grabbed){
-      obj.position.x+=obj.velocity.x*dt;
-      obj.position.y+=obj.velocity.y*dt;
-      obj.velocity.x*=0.92;
-      obj.velocity.y*=0.92;
-      obj.velocity.z*=0.92;
+      obj.posX += obj.velX*dt;
+      obj.posY += obj.velY*dt;
+      obj.velX *= 0.90;
+      obj.velY *= 0.90;
 
-      if(!obj.selected){
-        obj.mesh.position.lerp(obj.position,0.15);
-      } else {
-        obj.mesh.position.lerp(obj.position,0.25);
-      }
+      // Sync mesh position smoothly
+      obj.mesh.position.x += (obj.posX - obj.mesh.position.x)*0.18;
+      obj.mesh.position.y += (obj.posY - obj.mesh.position.y)*0.18;
+      obj.mesh.position.z += (obj.posZ - obj.mesh.position.z)*0.18;
+
+      // Idle rotation
+      obj.rotY += dt * 0.28 * (obj.id%2===0?1:-1);
+      obj.mesh.rotation.y = obj.rotY;
+      // Float
+      obj.mesh.position.y += Math.sin(ts*0.001+obj.id*1.3)*0.0004;
+    } else {
+      // While grabbed, mesh tracks directly
+      obj.mesh.position.set(obj.posX, obj.posY, obj.posZ);
+      obj.mesh.rotation.set(obj.rotX, obj.rotY, obj.rotZ);
     }
 
-    // Hover effect
-    const targetEmissive=obj.hovered||obj.selected?0.25:0.05;
-    obj.mesh.material.emissiveIntensity+=(targetEmissive-obj.mesh.material.emissiveIntensity)*0.1;
+    // Hover/select emissive
+    const targetEm = (obj.hovered||obj.selected) ? 0.28 : 0.07;
+    obj.mesh.material.emissiveIntensity += (targetEm-obj.mesh.material.emissiveIntensity)*0.12;
 
-    // Hover scale
-    const targetS=obj.hovered&&!obj.grabbed?obj.scale*1.08:obj.scale;
-    const curS=obj.mesh.scale.x;
-    obj.mesh.scale.setScalar(curS+(targetS-curS)*0.1);
+    // Scale
+    const baseS = obj.grabbed ? scaleTarget : ((obj.hovered&&!obj.grabbed) ? scaleTarget*1.07 : scaleTarget);
+    obj.mesh.scale.setScalar(baseS);
 
     // Outline
-    if(obj.outline){
-      obj.outline.visible=obj.selected||obj.hovered;
-    }
-
-    // Idle float when not grabbed
-    if(!obj.grabbed){
-      obj.mesh.rotation.y+=dt*0.3*(obj.id%2===0?1:-1);
-      obj.mesh.position.y+=Math.sin(time*0.001+obj.id)*0.0005;
-    }
+    obj.outline.visible = obj.selected || obj.hovered;
   }
 
-  renderer.render(scene,camera3d);
+  renderer.render(scene, cam3d);
 }
-animate(0);
+requestAnimationFrame(animate);
 
-// ─── MediaPipe Setup ───
+// ─── MediaPipe Setup ──────────────────────────────────────────────────────────
 const hands = new Hands({
-  locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
 });
 hands.setOptions({
-  maxNumHands:2,
-  modelComplexity:1,
-  minDetectionConfidence:0.7,
-  minTrackingConfidence:0.7
+  maxNumHands: 2,
+  modelComplexity: 1,
+  minDetectionConfidence: 0.75,
+  minTrackingConfidence: 0.75,
 });
-hands.onResults(processHands);
+hands.onResults(onHandsResults);
 
-const mpCamera = new Camera(video,{
-  onFrame:async()=>{ await hands.send({image:video}); },
-  width:1280, height:720
+const mpCamera = new Camera(video, {
+  onFrame: async () => { await hands.send({image: video}); },
+  width: 1280, height: 720,
 });
-mpCamera.start();
+mpCamera.start().catch(e => console.error('Camera start failed:', e));
 
-// Spawn a welcome object on load
-setTimeout(()=>{
-  spawnObject(0,0,0);
+// Welcome object
+setTimeout(() => {
+  spawnObject(0, 0.1, 0);
   showGesture('👋 Welcome! Try gestures');
-},2000);
+}, 2200);
 </script>
 </body>
 </html>
